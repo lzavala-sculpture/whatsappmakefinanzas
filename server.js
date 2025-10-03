@@ -1,34 +1,33 @@
 const express = require('express');
 const axios = require('axios');
 const app = express();
+
 app.use(express.json());
 
-const VERIFY_TOKEN = 'whatsappmakefinanzas_v2';
-const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/65j529mz5qikg5b4c1ykhw1jqhuz5vsf';
+const VERIFY_TOKEN = 'whatsappmakefinanzas_v2'; // debe ser EXACTAMENTE igual al de Meta
+const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/tu_webhook'; // tu URL real de Make
 
-app.get('/', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
+app.get('/webhook', (req, res) => {
+  const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('✔️ Webhook verified');
+    console.log('🟢 Webhook verificado correctamente');
     return res.status(200).send(challenge);
-  } else {
-    console.warn('❌ Invalid verify token');
-    res.sendStatus(403);
   }
+
+  console.log('🔴 Verificación fallida');
+  res.sendStatus(403);
 });
 
-app.post('/', async (req, res) => {
+app.post('/webhook', async (req, res) => {
   try {
     await axios.post(MAKE_WEBHOOK_URL, req.body);
     res.sendStatus(200);
   } catch (err) {
-    console.error('Error forwarding to Make:', err);
+    console.error('Error al enviar a Make:', err);
     res.sendStatus(500);
   }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Proxy server listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Proxy server listening on port ${PORT}`));
